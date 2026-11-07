@@ -1,0 +1,1 @@
+{ "carne": "123", "nombres": "<script>alert(1)</script>", "apellidos": "Pérez", "email": "no-es-correo", "carrera": "Sistemas", "dpi": "12" }

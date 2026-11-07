@@ -26,3 +26,7 @@ coverage/
 Thumbs.db
 .vscode/
 .idea/
+
+# Evidencias locales (cookies de sesión de curl, descargas)
+evidencias/*.txt
+evidencias/*.zip

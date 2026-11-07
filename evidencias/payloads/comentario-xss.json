@@ -1,0 +1,1 @@
+{ "contenido": "<img src=x onerror=\"alert('XSS almacenado')\"> Hola" }
