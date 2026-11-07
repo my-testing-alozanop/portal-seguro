@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+
+# Secretos: NUNCA versionar
+.env
+.env.*
+!.env.example
+
+# Material criptográfico generado localmente
+certs/
+*.pem
+*.key
+*.crt
+
+# Artefactos generados
+server/reports/
+server/logs/
+client/dist/
+coverage/
+
+# Enunciado (no forma parte del código)
+*.pdf
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
