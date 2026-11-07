@@ -24,3 +24,25 @@ input, textarea, select { padding: 6px 8px; border: 1px solid var(--border); bor
 table { border-collapse: collapse; width: 100%; }
 th, td { border-bottom: 1px solid var(--border); padding: 6px; text-align: left; }
 .error { color: var(--danger); }
+.espacio { flex: 1; }
+.sesion { font-size: 0.9rem; color: var(--muted); }
+section h2 { margin-top: 0; }
+.formulario { display: grid; gap: 8px; max-width: 520px; }
+.formulario label { display: grid; gap: 4px; }
+.fila { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.ancho { flex: 1; min-width: 240px; }
+.aviso { color: var(--accent); }
+.enlace { border: none; background: none; color: var(--accent); padding: 0; text-decoration: underline; }
+.datos { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
+.datos dt { font-weight: 600; }
+.datos dd { margin: 0; }
+.nota { width: 70px; }
+.comentarios { padding-left: 18px; }
+.comentarios li { margin: 6px 0; overflow-wrap: anywhere; }
+.opcion { display: block; margin: 8px 0; font-size: 0.9rem; }
+.bienvenida { font-size: 1.1rem; overflow-wrap: anywhere; }
+.lab { border-left: 4px solid var(--danger); padding-left: 12px; }
+.alerta { background: #fdecea; color: var(--danger); padding: 8px; border-radius: 6px; }
+.subnav { margin-top: 0; }
+.chip { font-size: 0.8rem; margin: 2px; padding: 2px 6px; font-family: monospace; }
+.sql { background: #1d2330; color: #e8edf5; padding: 8px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
