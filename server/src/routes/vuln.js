@@ -15,6 +15,20 @@ const { exec } = require('node:child_process');
 const { getPool } = require('../db/pool');
 const { requireAuth, requireRol } = require('../middleware/auth');
 const { aCsv, TIPOS, REPORTS_DIR } = require('../lib/reportes');
+const { emitirSesion } = require('../middleware/auth');
+const pino = require('pino');
+const { LOG_DIR } = require('../lib/logger');
+
+// Logger INSEGURO (Fase II-E): sin redact, sin seudónimos. Escribe en logs/inseguro.log.
+const logInseguro = pino(
+  { base: { app: 'portal-lab-VULN' }, timestamp: pino.stdTimeFunctions.isoTime },
+  process.env.NODE_ENV === 'test'
+    ? { write: () => {} }
+    : pino.multistream([
+      { stream: process.stdout },
+      { stream: pino.destination({ dest: path.join(LOG_DIR, 'inseguro.log'), mkdir: true, sync: false }) },
+    ]),
+);
 
 const router = express.Router();
 
@@ -105,6 +119,70 @@ router.get('/reporte/descargar', requireAuth, requireRol('admin'), (req, res) =>
   res.sendFile(ruta, (err) => {
     if (err && !res.headersSent) res.status(404).json({ ruta, error: err.message });
   });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Fase II-A · CONTRASEÑAS CON SHA-256 SIN SAL (VULNERABLE)
+// Causa raíz: SHA-256 es una función RÁPIDA (miles de millones de hashes/s en GPU) y sin sal:
+// la misma contraseña produce el mismo hash en todas las cuentas y en todas las bases de datos,
+// lo que permite tablas arcoíris y detectar contraseñas repetidas a simple vista.
+// Además, el login revela si el correo existe y no limita intentos.
+// ---------------------------------------------------------------------------------------------
+const sha256 = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+
+router.post('/registro', async (req, res) => {
+  const { email, password } = req.body ?? {};
+  await getPool().execute(
+    "INSERT INTO usuarios (email, password_hash, password_algo, rol) VALUES (?, ?, 'sha256', 'estudiante')",
+    [String(email), sha256(password)],
+  );
+  res.status(201).json({ ok: true, hash_guardado: sha256(password) });
+});
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body ?? {};
+  // Fase II-E · REGISTRO INSEGURO: guarda el cuerpo completo, contraseña incluida, y el correo en claro.
+  logInseguro.info({ evento: 'login', body: req.body, headers: req.headers }, 'intento de login');
+  const [[u]] = await getPool().execute(
+    "SELECT id, password_hash, rol, estudiante_id FROM usuarios WHERE email = ? AND password_algo = 'sha256'",
+    [String(email)],
+  );
+  // Mensajes distintos: permiten enumerar qué correos existen.
+  if (!u) return res.status(401).json({ error: 'El usuario no existe' });
+  if (u.password_hash !== sha256(password)) return res.status(401).json({ error: 'Contraseña incorrecta' });
+  emitirSesion(res, u);
+  return res.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Fase II-B · DPI EN TEXTO PLANO (VULNERABLE)
+// Causa raíz: el dato sensible se guarda tal cual; cualquiera con acceso a la BD, a un respaldo
+// o a un volcado (o vía SQLi) lo lee directamente. TLS no ayuda: protege solo el tránsito.
+// ---------------------------------------------------------------------------------------------
+router.post('/estudiantes', requireAuth, requireRol('admin'), async (req, res) => {
+  const { carne, nombres, apellidos, email, carrera, dpi } = req.body ?? {};
+  await getPool().execute(
+    'INSERT INTO estudiantes (carne, nombres, apellidos, email, carrera, dpi_plano) VALUES (?, ?, ?, ?, ?, ?)',
+    [carne, nombres, apellidos, email, carrera, dpi].map((v) => String(v ?? '')),
+  );
+  res.status(201).json({ ok: true, carne });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Fase II-E · ERROR INTERNO QUE FILTRA DETALLES (VULNERABLE)
+// Devuelve mensaje, stack (rutas internas) y la configuración de conexión al cliente.
+//   Prueba: GET /vuln/expediente/no-existe  (provoca un error en el servidor)
+// ---------------------------------------------------------------------------------------------
+router.get('/expediente/:carne', requireAuth, async (req, res) => {
+  const [[e]] = await getPool().query(`SELECT * FROM estudiantes WHERE carne = '${req.params.carne}'`);
+  res.json({ ...e, dpi_descifrado: require('../lib/crypto').decrypt(e.dpi_cifrado, e.carne) });
+});
+
+// eslint-disable-next-line no-unused-vars
+router.use((err, req, res, _next) => {
+  const { getSecrets } = require('../config/secrets');
+  const { password, ...db } = getSecrets().db; // ni siquiera la versión vulnerable expone la contraseña real
+  res.status(500).json({ mensaje: err.message, stack: err.stack, sql: err.sql, conexion_bd: db });
 });
 
 module.exports = router;

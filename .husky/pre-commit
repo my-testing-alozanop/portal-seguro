@@ -1,0 +1,12 @@
+# Fase II-D · Hook pre-commit: bloquea commits que contengan secretos (gitleaks).
+# Política "fail-closed": si gitleaks no está instalado, el commit NO se permite.
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks no está instalado; commit bloqueado. Instale con:  winget install gitleaks" >&2
+  exit 1
+fi
+echo "pre-commit: escaneando cambios preparados con gitleaks..."
+if gitleaks git --help >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact --verbose --no-banner
+else
+  gitleaks protect --staged --redact --verbose --no-banner
+fi

@@ -1,0 +1,12 @@
+{
+  "name": "portal-seguro",
+  "private": true,
+  "description": "Portal universitario de laboratorio (MASI · Seguridad en Aplicaciones)",
+  "scripts": {
+    "prepare": "husky",
+    "gitleaks": "gitleaks git . --redact --verbose --no-banner"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

@@ -17,7 +17,7 @@ tarea integradora de las semanas 4 y 5 (`tarea.pdf.pdf`). Todo corre **solo en l
    - En el cliente, los componentes vulnerables se marcan claramente como `Vuln*` y solo se
      muestran en el modo laboratorio.
 5. **Cada corrección lleva una prueba automatizada** (Jest + Supertest) que la verifique.
-6. La clave AWS de ejemplo (`AKIAIOSFODNN7EXAMPLE`) solo se usa en `../lab-fuga`, nunca en este repo.
+6. La clave AWS de ejemplo de la documentación de AWS (`AKIA…EXAMPLE`) solo se usa en `../lab-fuga`, nunca en este repo.
 
 ## Stack
 - `server/`: Node.js + Express + mysql2 (BD `portal_lab`, usuario `portal_app`), helmet,

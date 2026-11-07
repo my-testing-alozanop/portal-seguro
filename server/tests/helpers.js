@@ -44,6 +44,17 @@ async function login(app, { email, password }) {
   return res.headers['set-cookie'].map((c) => c.split(';')[0]).join('; ');
 }
 
+/** Redirige el logger seguro a memoria y devuelve accesores a las líneas JSON registradas. */
+function capturarLogs() {
+  const lineas = [];
+  require('../src/lib/logger')._setLoggerParaPruebas({ write: (l) => lineas.push(l) });
+  return {
+    texto: () => lineas.join(''),
+    eventos: (nombre) => lineas.map((l) => JSON.parse(l)).filter((e) => !nombre || e.evento === nombre),
+    limpiar: () => lineas.splice(0),
+  };
+}
+
 async function limpiar() {
   const pool = getPool();
   await pool.query("DELETE FROM comentarios WHERE usuario_id IN (SELECT id FROM usuarios WHERE email LIKE 'test-%')");
@@ -56,4 +67,4 @@ async function finalizar() {
   await closePool();
 }
 
-module.exports = { createApp, request, hayBD, describeDb, crearUsuario, login, cookieSesion, limpiar, finalizar, rnd };
+module.exports = { createApp, request, hayBD, describeDb, crearUsuario, login, cookieSesion, capturarLogs, limpiar, finalizar, rnd };

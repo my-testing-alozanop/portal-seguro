@@ -30,3 +30,4 @@ Thumbs.db
 # Evidencias locales (cookies de sesión de curl, descargas)
 evidencias/*.txt
 evidencias/*.zip
+evidencias/*.csv

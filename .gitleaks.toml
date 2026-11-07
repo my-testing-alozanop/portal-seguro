@@ -1,0 +1,13 @@
+# Configuración de gitleaks del proyecto principal (hook pre-commit y escaneo del historial).
+# Se usan TODAS las reglas oficiales de gitleaks.
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+Excepción única y justificada: el identificador de clave de EJEMPLO publicado en la
+documentación de AWS se menciona como TEXTO en la documentación de este proyecto (no es una
+credencial). La simulación de fuga con esa clave vive en ../lab-fuga, que NO usa esta excepción.
+"""
+regexTarget = "match"
+regexes = ['''AKIAIOSFODNN7EXAMPLE''']

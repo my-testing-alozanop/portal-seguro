@@ -4,11 +4,15 @@ const { body, param } = require('express-validator');
 const { validar } = require('../middleware/validators');
 const { requireAuth, requireRol } = require('../middleware/auth');
 const { generarReporte, rutaSegura, TIPOS } = require('../lib/reportes');
+const { auditar } = require('../lib/logger');
 
 const router = express.Router();
 
 // Privilegio mínimo: solo el rol admin genera y descarga reportes.
-router.use(requireAuth, requireRol('admin'));
+router.use(requireAuth, requireRol('admin'), (req, _res, next) => {
+  auditar('acceso_admin', { req_id: req.id, usuario_id: req.usuario.id, accion: `reportes ${req.method}` });
+  next();
+});
 
 router.post('/', body('tipo').isIn(Object.keys(TIPOS)).withMessage('lista blanca'), validar,
   async (req, res, next) => {

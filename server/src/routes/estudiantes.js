@@ -6,6 +6,7 @@ const { buscarEstudiantes, obtenerExpediente } = require('../db/estudiantes.repo
 const { reglas, validar } = require('../middleware/validators');
 const { requireAuth, requireRol } = require('../middleware/auth');
 const { encrypt, decrypt } = require('../lib/crypto');
+const { auditar } = require('../lib/logger');
 
 const router = express.Router();
 
@@ -31,10 +32,14 @@ router.get('/:carne/expediente', requireAuth, reglas.carne('carne', param), vali
     try {
       const exp = await obtenerExpediente(req.params.carne);
       const esPropio = exp && exp.id === req.usuario.estudianteId;
-      if (!exp || (!esPropio && req.usuario.rol !== 'admin')) {
+      const permitido = exp && (esPropio || req.usuario.rol === 'admin');
+      const evento = { req_id: req.id, usuario_id: req.usuario.id, rol: req.usuario.rol, carne: req.params.carne };
+      auditar('consulta_expediente', { ...evento, resultado: permitido ? 'ok' : 'denegado' }, permitido ? 'info' : 'warn');
+      if (!permitido) {
         // Misma respuesta para "no existe" y "no autorizado": no revela qué carnés existen.
         return res.status(404).json({ error: 'ERR_NO_ENCONTRADO' });
       }
+      if (!esPropio) auditar('acceso_admin', { ...evento, accion: 'consulta_expediente_ajeno' });
       const { id, dpi_cifrado, ...publico } = exp;
       return res.json({ ...publico, dpi: dpiEnmascarado(exp) });
     } catch (err) {
@@ -53,6 +58,8 @@ router.post('/', requireAuth, requireRol('admin'),
         'INSERT INTO estudiantes (carne, nombres, apellidos, email, carrera, dpi_cifrado) VALUES (?, ?, ?, ?, ?, ?)',
         [carne, nombres, apellidos, email, carrera, encrypt(dpi, carne)],
       );
+      // El DPI y el correo del estudiante NO se registran (dato personal innecesario en el log).
+      auditar('acceso_admin', { req_id: req.id, usuario_id: req.usuario.id, accion: 'alta_estudiante', carne });
       return res.status(201).json({ ok: true, carne });
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'ERR_DUPLICADO' });

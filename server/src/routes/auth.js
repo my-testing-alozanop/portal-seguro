@@ -1,9 +1,18 @@
 'use strict';
+/**
+ * Autenticación SEGURA (Fase II-A).
+ *  - Contraseñas con Argon2id (KDF lenta, con sal aleatoria por usuario y costo de memoria).
+ *  - Mensaje genérico ante cualquier fallo (no revela si existe el correo).
+ *  - Hash señuelo para igualar tiempos de respuesta (anti enumeración por tiempo).
+ *  - Límite de intentos con express-rate-limit (montado en app.js sobre /api/auth/login).
+ *  - Eventos de auditoría login_exitoso / login_fallido SIN contraseña y con correo seudonimizado.
+ */
 const express = require('express');
 const { getPool } = require('../db/pool');
 const { hashPassword, verifyPassword } = require('../lib/passwords');
 const { reglas, validar } = require('../middleware/validators');
 const { emitirSesion, cerrarSesion, requireAuth } = require('../middleware/auth');
+const { auditar, seudonimo } = require('../lib/logger');
 
 const router = express.Router();
 
@@ -31,10 +40,16 @@ router.post('/registro', reglas.email(), reglas.password(), validar, async (req,
 // En login NO se responde 400 con detalle de validación: cualquier entrada inválida termina en
 // el mismo 401 genérico. reglas.email() se usa solo para normalizar (NFKC + minúsculas).
 router.post('/login', reglas.email(), async (req, res, next) => {
+  const { email, password } = req.body ?? {};
+  const contexto = { req_id: req.id, ip: req.ip, usuario: seudonimo(email) };
+  const fallo = (motivo) => {
+    // El motivo real queda SOLO en el log interno; el cliente recibe siempre lo mismo.
+    auditar('login_fallido', { ...contexto, motivo }, 'warn');
+    return res.status(401).json({ error: 'ERR_CREDENCIALES' });
+  };
   try {
-    const { email, password } = req.body;
     if (typeof email !== 'string' || typeof password !== 'string' || password.length > 128) {
-      return res.status(401).json({ error: 'ERR_CREDENCIALES' });
+      return fallo('entrada_invalida');
     }
     const [[u]] = await getPool().execute(
       "SELECT id, password_hash, rol, estudiante_id FROM usuarios WHERE email = ? AND password_algo = 'argon2id'",
@@ -44,11 +59,11 @@ router.post('/login', reglas.email(), async (req, res, next) => {
       ? await verifyPassword(u.password_hash, password.normalize('NFKC'))
       : (await verifyPassword(await senuelo(), password), false);
 
-    if (!ok) {
-      // Mensaje genérico: no indica si falló el correo o la contraseña.
-      return res.status(401).json({ error: 'ERR_CREDENCIALES' });
-    }
+    if (!ok) return fallo(u ? 'password_incorrecta' : 'usuario_inexistente');
+
     emitirSesion(res, u);
+    auditar('login_exitoso', { ...contexto, usuario_id: u.id, rol: u.rol });
+    if (u.rol === 'admin') auditar('acceso_admin', { ...contexto, usuario_id: u.id, accion: 'login' });
     return res.json({ ok: true, rol: u.rol });
   } catch (err) {
     return next(err);

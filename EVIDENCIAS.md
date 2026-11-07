@@ -4,6 +4,11 @@ Guía para **reproducir cada prueba y saber qué captura tomar**. Todo se ejecut
 datos ficticios. Las capturas se guardan en `evidencias/capturas/` con el código indicado
 (p. ej. `I-B-03.png`) para referenciarlas en el informe.
 
+> **Desde la Fase II la API corre en HTTPS.** Si ya generó certificados (`npm run cert`), en los
+> comandos de esta guía reemplace `http://127.0.0.1:3000` por `https://localhost:3443` y agregue
+> `--cacert ..\server\certs\ca.pem --ssl-no-revoke` a cada `curl`. Las evidencias de la Fase II
+> están en `EVIDENCIAS-FASE2.md`.
+
 > Para cada vulnerabilidad el PDF pide: **código vulnerable → evidencia del ataque → código
 > corregido → evidencia de que ya no funciona**. Por eso casi todas las secciones tienen el par
 > "VULNERABLE (/vuln)" y "SEGURO (/api)".
