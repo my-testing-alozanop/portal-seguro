@@ -165,8 +165,8 @@ documentar permisos y proponer rotación y revocación.
 cd C:\Users\Abdiel\Desktop\portal-seguro\server
 npm run secrets:check
 cd ..
-git ls-files | findstr /i "env"
-git check-ignore -v server\.env
+git ls-files | findstr /i "\.env"
+git check-ignore -v server/.env
 ```
 
 ### 📸 II-C-01 — salida de los tres comandos
@@ -205,10 +205,11 @@ repositorio."*
 por qué borrarla del último commit no basta y describir revocación, investigación y corrección.
 
 ### Requisito
-Instale gitleaks (cmd **como administrador** no es necesario):
+Instale gitleaks (no requiere consola de administrador):
 ```cmd
-winget install gitleaks
+winget install --id Gitleaks.Gitleaks -e
 ```
+(Si `winget` no encuentra ese id, use `winget search gitleaks` y repita con el id que muestre.)
 Cierre y abra la consola y compruebe: `gitleaks version`.
 
 ### Pasos
