@@ -29,7 +29,8 @@ describeDb('1 · Entrada con caracteres especiales en búsqueda -> no altera la 
       await expect(buscarEstudiantes(p)).resolves.toEqual([]);
     }
     const r = await buscarEstudiantes("O'Connor");
-    expect(r).toHaveLength(1); // la comilla legítima funciona
+    expect(r.map((x) => x.apellidos)).toContain("O'Connor Herrera"); // la comilla legítima funciona
+    expect(r.every((x) => x.apellidos.includes("O'Connor"))).toBe(true);
     const [[{ n }]] = await getPool().query('SELECT COUNT(*) AS n FROM estudiantes');
     expect(n).toBeGreaterThanOrEqual(8); // la tabla sigue intacta
   });

@@ -27,8 +27,10 @@ describeDb('I-B · búsqueda SEGURA (consulta parametrizada)', () => {
   test("[PRUEBA 1] una comilla legítima (O'Connor) se busca literalmente", async () => {
     const res = await request(app).get('/api/estudiantes/buscar').query({ q: "O'Connor" }).set('Cookie', cookie);
     expect(res.status).toBe(200);
-    expect(res.body.resultados).toHaveLength(1);
-    expect(res.body.resultados[0].apellidos).toBe("O'Connor Herrera");
+    // Devuelve SOLO apellidos que contienen literalmente O'Connor (puede haber más de uno)
+    const apellidos = res.body.resultados.map((r) => r.apellidos);
+    expect(apellidos).toContain("O'Connor Herrera");
+    expect(apellidos.every((x) => x.includes("O'Connor"))).toBe(true);
   });
 
   test('[PRUEBA 1] UNION en la capa de datos se trata como texto: 0 filas y ningún hash', async () => {
